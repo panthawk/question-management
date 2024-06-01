@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- Quill.js CSS -->
+  <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+
+  <!-- Quill.js JavaScript -->
+  <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
+
+  <title>Get Questions</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1,
+    h2 {
+      text-align: center;
+    }
+
+    form,
+    table {
+      margin-top: 20px;
+    }
+
+    button {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+
+    button:hover {
+      background-color: #0056b3;
+    }
+
+    table {
+      width: 100%;
+      max-width: 800px;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    #saveButton {
+      margin-top: 20px;
+    }
+
+    .pagination {
+      margin: 20px 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .pagination button {
+      margin: 0 5px;
+      padding: 5px 10px;
+    }
+
+    .pagination button.disabled {
+      background-color: #ddd;
+      cursor: not-allowed;
+    }
+
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      overflow: auto;
+      background-color: rgb(0, 0, 0);
+      background-color: rgba(0, 0, 0, 0.4);
+      padding-top: 60px;
+    }
+
+    .modal-content {
+      background-color: #fefefe;
+      margin: 5% auto;
+      padding: 20px;
+      border: 1px solid #888;
+      width: 80%;
+      max-width: 500px;
+      box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+      animation-name: animatetop;
+      animation-duration: 0.4s;
+    }
+
+    @keyframes animatetop {
+      from {
+        top: -300px;
+        opacity: 0;
+      }
+
+      to {
+        top: 0;
+        opacity: 1;
+      }
+    }
+
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+    }
+
+    .close:hover,
+    .close:focus {
+      color: black;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+
+    /* drop down code */
+    /* Style the dropdown */
+    select {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .filterInput {
+      padding: 10px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>Get Questions</h1>
+  <form id="questionFilterForm">
+
+    <!-- Dropdown for Question Subject -->
+    <select id="subect">
+      <!-- Options will be populated dynamically -->
+    </select>
+    <!-- Dropdown for Book Name -->
+    <select id="bookName">
+      <!-- Options will be populated dynamically -->
+    </select>
+
+    <!-- Other filters and buttons -->
+    <input type="number" class="filterInput" placeholder="Priority" id="priority">
+    <input type="number" class="filterInput" placeholder="cocnept" id="Concept">
+    <input type="number" class="filterInput" placeholder="# repeated" id="repeated">
+    <button type=" submit">Get Questions</button>
+  </form>
+
+  <div id="questionsList">
+    <h2>Question Table</h2>
+    <table id="questionsTable">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th>Book Name</th>
+          <th>Question Number</th>
+          <th>Priority</th>
+          <th>Familiarity</th>
+          <th>Repetitions</th>
+          <th>Date</th>
+          <th>Comment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Fetched questions will be inserted here -->
+      </tbody>
+    </table>
+    <div class="pagination">
+      <button id="prevPage" disabled>Previous</button>
+      <span id="pageInfo">Page 1 of 1</span>
+      <button id="nextPage" disabled>Next</button>
+    </div>
+    <button id="saveButton">Save Changes</button>
+  </div>
+
+  <!-- The Modal -->
+  <div id="questionModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Question</h3>
+      <p id="questionText"></p>
+    </div>
+  </div>
+
+  <!-- The Comment Modal -->
+  <div id="commentModal" class="modal">
+    <div class="modal-content">
+      <span class="close">&times;</span>
+      <h3>Add Comment</h3>
+      <!-- Quill editor container -->
+      <div id="quillEditor"></div>
+      <button id="commentSubmitButton">Submit</button>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Quill.js
+    var quill = new Quill('#quillEditor', {
+      theme: 'snow' // Specify the theme ('snow' or 'bubble')
+    });
+
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let totalPages = 1;
+    let questionsData = [];
+
+
+
+    // Fetch subjects and populate the dropdown
+    fetch('/subjects')
+      .then(response => response.json())
+      .then(subjects => {
+        const subjectDropdown = document.getElementById('subect');
+        subjects.forEach(subject => {
+          const option = document.createElement('option');
+          option.value = subject;
+          option.textContent = subject;
+          subjectDropdown.appendChild(option);
+        });
+        const allOption = document.createElement("option");
+        allOption.text = "ALL";
+        allOption.value = "ALL";
+        subjectDropdown.appendChild(allOption);
+
+        // Add event listener to subject dropdown
+        subjectDropdown.addEventListener('change', () => {
+          const selectedSubject = subjectDropdown.value;
+          if (selectedSubject === 'ALL') {
+            // Enable and fetch all books if subject is 'ALL'
+            fetchAllBooks();
+          } else {
+            // Fetch books based on selected subject
+            fetchBooksBySubject(selectedSubject);
+          }
+        });
+      })
+      .catch(error => console.error('Error fetching subjects:', error));
+
+    // Function to fetch all books and populate the dropdown
+    const fetchAllBooks = () => {
+      fetch("/books")
+        .then(response => response.json())
+        .then(books => populateBooksDropdown(books))
+        .catch(error => console.error("Error fetching books:", error));
+    };
+
+    // Function to fetch books by subject and populate the dropdown
+    const fetchBooksBySubject = (subject) => {
+      fetch(`/books?subject=${subject}`)
+        .then(response => response.json())
+        .then(books => populateBooksDropdown(books))
+        .catch(error => console.error("Error fetching books:", error));
+    };
+
+    // Function to populate the books dropdown
+    const populateBooksDropdown = (books) => {
+      const bookDropdown = document.getElementById("bookName");
+      bookDropdown.innerHTML = ""; // Clear existing options
+      books.forEach((book) => {
+        const option = document.createElement("option");
+        option.text = book.name;
+        option.value = book.name;
+        bookDropdown.appendChild(option);
+      });
+      const allOption = document.createElement("option");
+      allOption.text = "ALL";
+      allOption.value = "ALL";
+      bookDropdown.appendChild(allOption);
+    };
+
+    // Call fetchAllBooks initially to populate books dropdown with all books
+    fetchAllBooks();
+
+
+    const questionFilterForm = document.getElementById("questionFilterForm");
+    const questionsList = document.getElementById("questionsList");
+
+    questionFilterForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const formElements = questionFilterForm.elements;
+      const queryParams = [];
+
+      for (let element of formElements) {
+        if (element.name && !element.disabled) {
+          if ((element.type === "checkbox" || element.type === "radio") && !element.checked) {
+            continue;
+          }
+          queryParams.push(encodeURIComponent(element.name) + '=' + encodeURIComponent(element.value));
+        }
+      }
+
+      const queryString = queryParams.join('&');
+      console.log("Query parameters: " + queryString);
+      // Question list handling
+      fetch(`/get-questions`)
+        .then((response) => response.json())
+        .then((data) => {
+          questionsData = data;
+          totalPages = Math.ceil(data.length / rowsPerPage);
+          currentPage = 1;
+          renderTable();
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    });
+
+    // Function to render the table based on the current page
+    const renderTable = () => {
+      const questionsTable = document.getElementById("questionsTable");
+      const tbody = questionsTable.querySelector("tbody");
+      tbody.innerHTML = "";
+
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = Math.min(start + rowsPerPage, questionsData.length);
+
+      for (let i = start; i < end; i++) {
+        const question = questionsData[i];
+        const row = document.createElement("tr");
+        row.dataset.question = JSON.stringify(question);
+
+        const selectCell = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        selectCell.appendChild(checkbox);
+
+        const bookNameCell = document.createElement("td");
+        bookNameCell.contentEditable = false;
+        bookNameCell.textContent = question.bookName;
+
+        const questionNumberCell = document.createElement("td");
+        questionNumberCell.contentEditable = false;
+        questionNumberCell.textContent = question.questionNumber;
+
+        const priorityCell = document.createElement("td");
+        priorityCell.contentEditable = true;
+        priorityCell.textContent = question.priority;
+
+        const familiarityCell = document.createElement("td");
+        familiarityCell.contentEditable = true;
+        familiarityCell.textContent = question.familiarity;
+
+        const repetitionsCell = document.createElement("td");
+        repetitionsCell.contentEditable = false;
+        repetitionsCell.textContent = question.repetitions;
+
+        const dateCell = document.createElement("td");
+        dateCell.contentEditable = false;
+        dateCell.textContent = question.date;
+
+        const commentButtonCell = document.createElement("td");
+        const commentButton = createCommentButton(question.bookName, question.questionNumber);
+        commentButtonCell.appendChild(commentButton);
+
+        row.appendChild(selectCell);
+        row.appendChild(bookNameCell);
+        row.appendChild(questionNumberCell);
+        row.appendChild(priorityCell);
+        row.appendChild(familiarityCell);
+        row.appendChild(repetitionsCell);
+        row.appendChild(dateCell);
+        row.appendChild(commentButtonCell);
+
+        // context menu code
+        row.addEventListener("contextmenu", (event) => {
+          event.preventDefault();
+
+          const contextMenu = document.createElement("div");
+          contextMenu.classList.add("context-menu");
+
+          const menuItem = document.createElement("div");
+          menuItem.textContent = "Add comment";
+          menuItem.classList.add("menu-item");
+
+          menuItem.addEventListener("click", () => {
+            modal = document.getElementById("commentModal");
+            modal.style.display = "block";
+            const inputField = modal.querySelector("input");
+            inputField.focus();
+          });
+
+          contextMenu.appendChild(menuItem);
+          contextMenu.style.top = `${event.clientY}px`;
+          contextMenu.style.left = `${event.clientX}px`;
+          document.body.appendChild(contextMenu);
+
+          document.addEventListener("click", closeContextMenu);
+
+          function closeContextMenu() {
+            document.body.removeChild(contextMenu);
+            document.removeEventListener("click", closeContextMenu);
+          }
+        });
+
+        tbody.appendChild(row);
+      }
+
+      document.getElementById("pageInfo").textContent = `Page ${currentPage} of ${totalPages}`;
+      document.getElementById("prevPage").disabled = currentPage === 1;
+      document.getElementById("nextPage").disabled = currentPage === totalPages;
+    };
+
+    // Pagination buttons handling
+    document.getElementById("prevPage").addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+
+    document.getElementById("nextPage").addEventListener("click", () => {
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderTable();
+      }
+    });
+
+    // Modal handling
+    const modal = document.getElementById("questionModal");
+    const span = document.getElementsByClassName("close")[0];
+
+    span.onclick = function () {
+      modal.style.display = "none";
+    };
+
+    window.onclick = function (event) {
+      if (event.target == modal) {
+        modal.style.display = "none";
+      }
+    };
+
+    document
+      .getElementById("questionsTable")
+      .addEventListener("dblclick", function (event) {
+        let target = event.target;
+        while (target && target.nodeName !== "TR") {
+          target = target.parentNode;
+        }
+        if (target && target.nodeName === "TR") {
+          const questionData = JSON.parse(target.dataset.question);
+          document.getElementById("questionText").innerText =
+            questionData.question;
+          modal.style.display = "block";
+        }
+      });
+
+    document.getElementById("saveButton").addEventListener("click", () => {
+      const rows = document.querySelectorAll("#questionsTable tbody tr");
+      const updatedQuestions = [];
+
+      rows.forEach((row) => {
+        const checkbox = row.querySelector('input[type="checkbox"]');
+        if (checkbox.checked) {
+          const cells = row.querySelectorAll("td");
+          const question = {
+            bookName: cells[1].textContent,
+            questionNumber: cells[2].textContent,
+            priority: cells[3].textContent,
+            familiarity: cells[4].textContent,
+            repetitions: cells[5].textContent,
+            date: cells[6].textContent,
+          };
+          updatedQuestions.push(question);
+        }
+      });
+
+      fetch("/save-questions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedQuestions),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Save response:", data);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    });
+    // Function to create a button element for opening the comment modal
+    const createCommentButton = (bookName, questionNumber) => {
+      const button = document.createElement("button");
+      button.textContent = "Add Comment";
+      button.classList.add("comment-button");
+      button.dataset.bookName = bookName;
+      button.dataset.questionNumber = questionNumber;
+      button.addEventListener("click", openCommentModal);
+      return button;
+    };
+
+
+    // Function to open the comment modal
+    const openCommentModal = () => {
+      const button = event.target;
+      const bookName = button.dataset.bookName;
+      const questionNumber = button.dataset.questionNumber;
+      // Get the comment modal element
+      const commentModal = document.getElementById("commentModal");
+
+      // Display the comment modal
+      commentModal.style.display = "block";
+
+      // Focus on the Quill editor
+      quill.focus();
+
+      // Get the close button element inside the modal
+      const closeButton = commentModal.querySelector(".close");
+
+      // Close the modal when the close button is clicked
+      closeButton.addEventListener("click", () => {
+        commentModal.style.display = "none";
+      });
+
+      // Close the modal when the user clicks outside the modal
+      window.addEventListener("click", (event) => {
+        if (event.target === commentModal) {
+          commentModal.style.display = "none";
+        }
+      });
+
+      // Retrieve existing comment for the question, if any
+      retrieveExistingComment(bookName, questionNumber);
+
+      // Handle comment submission
+      const commentSubmitButton = document.getElementById("commentSubmitButton");
+      commentSubmitButton.addEventListener("click", () => {
+        const commentContent = quill.root.innerHTML; // Get the HTML content from Quill
+        const obj = {
+          bookName: bookName,
+          questionNumber: questionNumber,
+          comment: commentContent,
+        };
+        // Send the comment content to the server for saving
+        saveComment(obj);
+        // Close the modal after submitting the comment
+        commentModal.style.display = "none";
+      });
+    };
+
+    // Function to retrieve existing comment for the question
+    const retrieveExistingComment = (bookName, questionNumber) => {
+      fetch(`/get-comment?bookName=${bookName}&questionNumber=${questionNumber}`)
+        .then((response) => response.json())
+        .then((data) => {
+          const existingComment = data.comment;
+          // Display existing comment in the modal
+          // document.getElementById("existingComment").innerHTML = existingComment;
+          quill.root.innerHTML = existingComment;
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+
+    // Function to save the comment to the server
+    const saveComment = (commentObj) => {
+      fetch("/save-comment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(commentObj),
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          console.log("Comment saved:", data);
+        })
+        .catch((error) => {
+          console.error("Error:", error);
+        });
+    };
+
+  </script>
+</body>
+
+</html>
+
+
+</body>
+
+</html>

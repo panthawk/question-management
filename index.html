@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book and Question Management</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        a {
+            display: inline-block;
+            margin: 10px;
+            padding: 10px 20px;
+            text-decoration: none;
+            color: white;
+            background-color: #007BFF;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+
+        a:hover {
+            background-color: #0056b3;
+        }
+
+        #reports {
+            margin-top: 20px;
+        }
+
+        #reports>div {
+            margin-bottom: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .link-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .report-section {
+            margin: 20px;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            background-color: #f9f9f9;
+        }
+
+        .report-heading {
+            font-size: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+            color: #444;
+        }
+
+        .report-content {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .report-part {
+            flex: 1;
+            margin: 0 10px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #fff;
+        }
+
+        .report-part h3 {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .report-part p {
+            font-size: 16px;
+            margin: 5px 0;
+            color: #000000;
+        }
+
+        .distribution-item {
+            margin: 5px 0;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .priority-item {
+            color: #007bff;
+        }
+
+        .familiarity-item {
+            color: #28a745;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Book and Question Management</h1>
+        <div class="link-container">
+            <a href="./formHtml.html">Add Book</a>
+            <a href="./question.html">Add Question</a>
+            <a href="./ql.html">Get Questions</a>
+        </div>
+        <div id="reports">
+            <div id="questionCount">Loading number of questions...</div>
+            <div id="notRepeatedCount">Loading number of questions still not repeated...</div>
+            <div id="priorityGreaterThan4Count">Loading number of questions with priority greater than 4...</div>
+            <!-- <div id="Priority">Loading familiarity distribution...</div> -->
+        </div>
+    </div>
+    <div class="report-section">
+        <div class="report-heading">Report</div>
+        <div class="report-content">
+            <div class="report-part">
+                <h3>Questions</h3>
+                <p>Number of questions: <span id="num-questions"></span></p>
+                <p>Number of questions attempted: <span id="num-attempted"></span></p>
+                <p>Number of questions not attempted: <span id="num-not-attempted"></span></p>
+            </div>
+            <div class="report-part">
+                <h3>Priority</h3>
+                <span id="priority-distribution"></span></p>
+            </div>
+            <div class="report-part">
+                <h3>Concept Distribution</h3>
+                <div id="familiarityDistribution"></div>
+            </div>
+        </div>
+    </div>
+    <script>
+        fetch('/reports')
+            .then(response => response.json())
+            .then(data => {
+                console.log(data)
+                const reportsDiv = document.getElementById('reports');
+                reportsDiv.innerHTML = ''; // Clear previous content
+
+                // Display number of questions
+                let noq = document.getElementById('num-questions');
+                noq.textContent = data.numberOfQuestions;
+
+                // Display number of questions still not repeated
+                let noqa = document.getElementById('num-attempted');
+                noqa.textContent = parseInt(data.numberOfQuestions) - parseInt(data.notRepeatedCount);
+
+                // Display number of questions still not repeated
+                let noqna = document.getElementById('num-not-attempted');
+                noqna.textContent = data.notRepeatedCount;
+
+
+                // Display familiarity distribution
+                const concetDist = data.familiarityDistribution;
+                const conceptDiv = document.getElementById('familiarityDistribution');
+                for (const [priority, count] of Object.entries(concetDist)) {
+                    const p = document.createElement('p');
+                    p.textContent = `Concept ${priority}: ${count} questions`;
+                    p.classList.add('distribution-item', 'familiarity-item');
+                    conceptDiv.appendChild(p);
+                }
+
+                const priorityDist = data.priorityDistribution;
+                const priorityDistDiv = document.getElementById('priority-distribution');
+                for (const [priority, count] of Object.entries(priorityDist)) {
+                    const p = document.createElement('p');
+                    p.textContent = `Priority ${priority}: ${count} questions`;
+                    p.classList.add('distribution-item', 'priority-item');
+                    priorityDistDiv.appendChild(p);
+                }
+
+            })
+            .catch(error => {
+                console.error('Error fetching reports:', error);
+                const reportsDiv = document.getElementById('reports');
+                reportsDiv.textContent = 'Error fetching reports';
+            });
+
+    </script>
+</body>
+
+</html>

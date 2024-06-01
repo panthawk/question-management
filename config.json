@@ -1,0 +1,8 @@
+{
+    "weights": {
+        "priority": 0.1,
+        "familiarity": 0.1,
+        "timeGap": 0.7,
+        "repetitions": 0.1
+    }
+}

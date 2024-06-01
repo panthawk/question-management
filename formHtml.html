@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Book</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f0f0f0;
+        }
+
+        h2 {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        form {
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            font-weight: bold;
+        }
+
+        input[type="text"],
+        textarea,
+        select,
+        input[type="submit"] {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        input[type="submit"] {
+            background-color: #007bff;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #0056b3;
+        }
+
+        table {
+            width: 80%;
+            margin: 20px auto;
+            border-collapse: collapse;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #007bff;
+            color: white;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Add Book</h2>
+    <form id="bookForm" action="./p-book" method="post">
+        <label for="bookName">Book Name:</label><br>
+        <input type="text" id="bookName" name="bookName" required><br><br>
+        <label for="bookDescription">Book Description:</label><br>
+        <textarea id="bookDescription" name="bookDescription" rows="4" cols="50"></textarea><br><br>
+        <label for="bookSubject">Subject:</label><br>
+        <select id="bookSubject" name="bookSubject">
+            <!-- Options will be populated dynamically -->
+        </select>
+        <button id="addNewSubjectBtn" type="button">Add New Subject</button><br><br>
+        <input type="submit" value="Submit">
+    </form>
+    <h2>Book List</h2>
+    <table id="bookTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Description</th>
+                <th>Subject</th>
+            </tr>
+        </thead>
+        <tbody id="bookList">
+            <!-- Book list will be populated here -->
+        </tbody>
+    </table>
+    <script>
+        // Fetch subjects and populate the dropdown
+        fetch('/subjects')
+            .then(response => response.json())
+            .then(subjects => {
+                const subjectDropdown = document.getElementById('bookSubject');
+                subjects.forEach(subject => {
+                    const option = document.createElement('option');
+                    option.value = subject;
+                    option.textContent = subject;
+                    subjectDropdown.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error fetching subjects:', error));
+
+        // Add event listener for the "Add New Subject" button
+        const addNewSubjectBtn = document.getElementById('addNewSubjectBtn');
+        addNewSubjectBtn.addEventListener('click', () => {
+            const newSubject = prompt('Enter the new subject:');
+            if (newSubject) {
+                // Add the new subject to the dropdown
+                const subjectDropdown = document.getElementById('bookSubject');
+                const option = document.createElement('option');
+                option.value = newSubject;
+                option.textContent = newSubject;
+                subjectDropdown.appendChild(option);
+                // Select the new subject
+                subjectDropdown.value = newSubject;
+            }
+        });
+
+        // Fetch books and populate the table
+        fetch('/books')
+            .then(response => response.json())
+            .then(data => {
+                const bookListTable = document.getElementById('bookList');
+                data.forEach(book => {
+                    const row = bookListTable.insertRow();
+                    const nameCell = row.insertCell(0);
+                    const descCell = row.insertCell(1);
+                    const subjectCell = row.insertCell(2);
+                    nameCell.textContent = book.name;
+                    descCell.textContent = book.disc;
+                    subjectCell.textContent = book.sub;
+                });
+            })
+            .catch(error => console.error('Error fetching book list:', error));
+    </script>
+</body>
+
+</html>
