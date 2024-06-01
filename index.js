@@ -11,17 +11,6 @@ const formidable = require("formidable");
 // const booksDBPath = "revision.db";
 
 // const booksDB = new Datastore({ filename: booksDBPath, autoload: true });
-
-// Override NeDB's storage write function to use the modified safeWrite function
-const originalFlushToStorage =
-  Datastore.prototype.persistence.datafile.flushToStorage;
-Datastore.prototype.persistence.datafile.flushToStorage = function (
-  filename,
-  callback
-) {
-  safeWrite(filename, "r+", callback);
-};
-
 const booksDBPath = path.join(process.cwd(), "revision.db");
 const booksDB = new Datastore({ filename: booksDBPath, autoload: true });
 
@@ -625,21 +614,3 @@ const handleCommentquest = (req, res) => {
     }
   });
 };
-
-function safeWrite(filename, flags, callback) {
-  fs.open(filename, flags, (err, fd) => {
-    if (err) {
-      return callback(err);
-    }
-    // Skip fsync and proceed to close the file
-    fs.close(fd, (errC) => {
-      if (errC) {
-        const e = new Error("Failed to close the file");
-        e.errorOnClose = errC;
-        return callback(e);
-      } else {
-        return callback(null);
-      }
-    });
-  });
-}
