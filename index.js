@@ -8,16 +8,21 @@ require("dotenv").config();
 const formidable = require("formidable");
 
 // Specify the path to the existing NeDB database file
-const booksDBPath = "revision.db";
+// const booksDBPath = "revision.db";
 
+// const booksDB = new Datastore({ filename: booksDBPath, autoload: true });
+const booksDBPath = path.join(process.cwd(), "revision.db");
 const booksDB = new Datastore({ filename: booksDBPath, autoload: true });
 
+// const booksDB = new Datastore({ filename: booksDBPath, autoload: true });
+const questionDBPath = path.join(process.cwd(), "question.db");
 const questionsDB = new Datastore({
-  filename: "question.db",
+  filename: questionDBPath,
   autoload: true,
 });
 
-const db = new Datastore({ filename: "comments.db", autoload: true });
+const commentDB = path.join(process.cwd(), "comments.db");
+const db = new Datastore({ filename: commentDB, autoload: true });
 
 const server = http.createServer((req, res) => {
   // Parse the URL and method from the request
